@@ -54,11 +54,11 @@ class HockeyStreams:
     def __check_premium(self):
         self.__check_logged_in()
         if not self.is_premium():
-            raise ValueError("Not a premium member")
+            raise ValueError("Current account is not a premium member on hockeystreams.com")
 
     def __check_logged_in(self):
         if not self.is_logged_in():
-            raise ValueError("Not logged into hockeystreams.com")
+            raise ValueError("Not logged into hockeystreams.com, please specify the username and password to the API constructor")
 
     #date should be str MM/DD/YYYY, none for today
     def get_live_streams(self, shouldFilter = False, team = None, date=None):
@@ -89,6 +89,10 @@ class HockeyStreams:
         return self.util.json_to_objs(scores_list, models.Score)
 
     def __filter_team(self, objs, team):
+
+        if team is None or len(team) == 0:
+            return objs
+
         def filterf(obj):
             if obj.has_key('homeTeam') and str(obj['homeTeam']) == team:
                 return True
@@ -174,6 +178,3 @@ class HockeyStreams:
             params['league'] = league
         data = urllib.urlencode(params)
         return self.util.json_to_objs(self.util.get_json(self.util.get_list_teams_endpoint(), data)['teams'], models.Team)
-
-
-
