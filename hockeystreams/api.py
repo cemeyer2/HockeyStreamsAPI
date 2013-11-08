@@ -3,6 +3,7 @@ __author__ = 'Charlie Meyer'
 from os.path import exists, join, expanduser, realpath
 import sys, os, urllib, urllib2, json, traceback
 from pprint import pprint
+import models
 
 
 class HSUtil:
@@ -93,6 +94,15 @@ class HSUtil:
         def get_locations_endpoint(self, endpoint= 'GetLocations?'):
             return self.__ep(endpoint)
 
+        def json_to_objs(self, js, model_type):
+            if type(js) == list:
+                retval = []
+                for obj in js:
+                    retval.append(self.json_to_objs(obj, model_type))
+                return retval
+            else:
+                return model_type(js)
+
     __instance = None
 
     def __init__(self):
@@ -147,7 +157,7 @@ class HockeyStreams:
         return self.username
 
     #date should be str MM/DD/YYYY, none for today
-    def get_live(self, shouldFilter = False, team = None, date=None):
+    def get_live_streams(self, shouldFilter = False, team = None, date=None):
         if team is None:
             team = self.get_favorite_team()
         params = {'token': self.__get_token()}
@@ -158,12 +168,12 @@ class HockeyStreams:
         live_list = js['schedule']
         if shouldFilter:
             live_list = self.__filter_team(live_list, team)
-        return live_list
+        return self.util.json_to_objs(live_list, models.LiveStream)
 
     def get_scores(self, shouldFilter = False, team = None):
         if team is None:
             team = self.get_favorite_team()
-        #dont mind making this one public since anyone can make one
+        #dont mind putting this one here since it is the only endpoint that uses it
         data = urllib.urlencode({
             'key': 'ba74e5be0488146301152af4cb0dd23d'
         })
@@ -171,7 +181,7 @@ class HockeyStreams:
         scores_list = js['scores']
         if shouldFilter:
             scores_list = self.__filter_team(scores_list, team)
-        return scores_list
+        return self.util.json_to_objs(scores_list, models.Score)
 
     def __filter_team(self, objs, team):
         def filterf(obj):
@@ -181,14 +191,6 @@ class HockeyStreams:
                 return True
             return False
         return filter(filterf, objs)
-
-    def extract_score(self, obj, team = None):
-        if team is None:
-            team = self.get_favorite_team()
-        if obj.has_key('homeScore'):
-            return int(obj['homeScore'])
-        if obj.has_key('awayScore'):
-            return int(obj['awayScore'])
 
     def ip_exception(self):
         data = urllib.urlencode({
@@ -207,10 +209,10 @@ class HockeyStreams:
             params['location'] = location
         data = urllib.urlencode(params)
         js = self.util.get_json(self.util.get_live_stream_endpoint(), data)
-        return js
+        return self.util.json_to_objs(js, models.LiveStream)
 
     def get_locations(self):
-        return self.util.get_json(self.util.get_locations_endpoint(), "")
+        return self.util.json_to_objs(self.util.get_json(self.util.get_locations_endpoint(), ""), models.Location)
 
     def get_on_demand_dates(self):
         data = urllib.urlencode({
@@ -225,5 +227,5 @@ class HockeyStreams:
         if team is not None:
             params['team'] = team
         data = urllib.urlencode(params)
-        return self.util.get_json(self.util.get_on_demand_endpoint(), data)['ondemand']
+        return self.util.json_to_objs(self.util.get_json(self.util.get_on_demand_endpoint(), data)['ondemand'], models.OnDemand)
 

@@ -1,3 +1,4 @@
 __author__ = 'cemeyer'
 
-from api import HockeyStreams as HockeyStreams
+from api import HockeyStreams
+from models import LiveStream
