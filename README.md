@@ -3,9 +3,11 @@
 
 ## Install
 
-- Assumes Python 2.7
+Assumes Python 2.7
 
+    
     sudo pip install hockeystreams
+
 
 ## Usage
 
@@ -72,7 +74,7 @@ will output something similar to (depending on the api data):
     isi_stream: 1
     </OnDemand>
 
-These objects can be used as the unauthenticated versions.
+These objects can be used just as you would the unauthenticated versions.
 
 It is important to note that many of the API functions exposed by hockeystreams.com are only available to
 premium members of the site. As such, this wrapper will raise a ValueError if a non-premium account tries to
