@@ -10,6 +10,7 @@
 ## Usage
 
 For anonymous access, hockeystreams.com allows the get_scores ability:
+
     from hockeystreams import HockeyStreams
     hs = HockeyStreams()
     score = hs.get_scores(shouldFilter=True, team="Calgary Flames")[0]
