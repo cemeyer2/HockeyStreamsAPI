@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='hockeystreams',
-    version='0.2',
+    version='0.2.1',
     description='Python wrapper for the hockeystreams.com REST API',
     author='Charlie Meyer',
     author_email='charlie@charliemeyer.net',
