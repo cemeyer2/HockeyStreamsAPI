@@ -26,8 +26,9 @@ class hsmodelbase:
 
     def __repr__(self):
         s = "<"+str(self.__class__.__name__)+">\n"
-        s += pprint.pformat(self.dictionary)
-        s += "\n</"+str(self.__class__.__name__)+">"
+        for key in self.dictionary:
+            s += str(key)+": "+str(self.dictionary[key])+"\n"
+        s += "</"+str(self.__class__.__name__)+">"
         return s
 
 class LiveStream(hsmodelbase):
