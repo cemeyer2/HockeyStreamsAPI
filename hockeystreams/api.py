@@ -9,23 +9,7 @@ class HSUtil:
 
     class __impl:
         def get_api_key(self):
-            key_file_basename = "hockeystreams.key"
-            paths = []
-            paths.append(os.getcwd())
-            paths.append(expanduser("~"))
-            paths.append("/etc/")
-            for path in paths:
-                key_file = join(path, key_file_basename)
-                if exists(key_file):
-                    fp = open(key_file)
-                    key = fp.read()
-                    fp.close()
-                    return key
-                    pass
-                else:
-                    print "key file not found in "+str(key_file)
-            print "Key file not found, exiting"
-            sys.exit(1)
+            return "1f160e46fba7aec26a6ac5b82a6ffc2f"
 
         def get_json(self, url, params):
             return self.__json(url, params, 'GET')
@@ -46,8 +30,6 @@ class HSUtil:
                     response = urllib2.urlopen(request, params)
                 page = response.read()
                 code = response.code
-                print code
-                print response.info()
                 response.close()
                 if code == 204:
                     return {}
