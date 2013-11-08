@@ -1,6 +1,8 @@
+README
 setup.py
 hockeystreams/__init__.py
 hockeystreams/api.py
+hockeystreams/hsutil.py
 hockeystreams/models.py
 hockeystreams.egg-info/PKG-INFO
 hockeystreams.egg-info/SOURCES.txt

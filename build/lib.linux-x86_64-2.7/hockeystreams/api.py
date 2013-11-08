@@ -1,135 +1,13 @@
-__author__ = 'Charlie Meyer'
+__author__ = 'Charlie Meyer <charlie@charliemeyer.net>'
 
-from os.path import exists, join, expanduser, realpath
-import sys, os, urllib, urllib2, json, traceback
-from pprint import pprint
-
-
-class HSUtil:
-
-    class __impl:
-        def get_api_key(self):
-            key_file_basename = "hockeystreams.key"
-            paths = []
-            paths.append(os.getcwd())
-            paths.append(expanduser("~"))
-            paths.append("/etc/")
-            for path in paths:
-                key_file = join(path, key_file_basename)
-                if exists(key_file):
-                    fp = open(key_file)
-                    key = fp.read()
-                    fp.close()
-                    return key
-                    pass
-                else:
-                    print "key file not found in "+str(key_file)
-            print "Key file not found, exiting"
-            sys.exit(1)
-
-        def get_json(self, url, params):
-            return self.__json(url, params, 'GET')
-
-        def post_json(self, url, params):
-            return self.__json(url, params, 'POST')
-
-        def __json(self, url, params, type):
-            try:
-                if type == 'GET':
-                    url = "".join([url,params])
-                request = urllib2.Request(url)
-                request.add_header('content-type', 'application/x-www-form-urlencoded')
-                response = None
-                if type == 'GET':
-                    response = urllib2.urlopen(request)
-                else:
-                    response = urllib2.urlopen(request, params)
-                page = response.read()
-                code = response.code
-                print code
-                print response.info()
-                response.close()
-                if code == 204:
-                    return {}
-                js = json.loads(page)
-                self.__error_parse(js)
-                return js
-
-            except urllib2.HTTPError as e:
-                if e.getcode() == 400:
-                    self.__error_parse(json.loads(e.read()))
-                else:
-                    print "unknown http error, code="+e.getcode()
-                sys.exit(1)
-
-        def __error_parse(self, js):
-            if type(js) == list:
-                return
-            if js.has_key('status') and str(js['status']) == 'Failed':
-                print js['msg']
-                sys.exit(1)
-
-        def __base_url(self):
-            return 'https://api.hockeystreams.com/'
-
-        def __ep(self, ep):
-            return "".join([self.__base_url(), ep])
-
-        def get_scores_endpoint(self, endpoint = 'Scores?'):
-            return self.__ep(endpoint)
-
-        def get_login_endpoint(self, endpoint = 'Login?'):
-            return self.__ep(endpoint)
-
-        def get_get_live_endpoint(self, endpoint = 'GetLive?'):
-            return self.__ep(endpoint)
-
-        def get_live_stream_endpoint(self, endpoint = 'GetLiveStream?'):
-            return self.__ep(endpoint)
-
-        def get_on_demand_dates_endpoint(self, endpoint = 'GetOnDemandDates?'):
-            return self.__ep(endpoint)
-
-        def get_on_demand_endpoint(self, endpoint = 'GetOnDemand?'):
-            return self.__ep(endpoint)
-
-        def get_on_demand_stream_endpoint(self, endpoint = 'GetOnDemandStream?'):
-            return self.__ep(endpoint)
-
-        def get_highlights_endpoint(self, endpoint = 'GetHighlights?'):
-            return self.__ep(endpoint)
-
-        def get_ip_exception_endpoint(self, endpoint = 'IPException?'):
-            return self.__ep(endpoint)
-
-        def get_condensed_games_endpoint(self, endpoint = 'GetCondensedGames?'):
-            return self.__ep(endpoint)
-
-        def get_list_teams_endpoint(self, endpoint = 'ListTeams?'):
-            return self.__ep(endpoint)
-
-        def get_locations_endpoint(self, endpoint= 'GetLocations?'):
-            return self.__ep(endpoint)
-
-    __instance = None
-
-    def __init__(self):
-        if HSUtil.__instance is None:
-            HSUtil.__instance = HSUtil.__impl()
-        self.__dict__['_Singleton__instance'] = HSUtil.__instance
-
-    def __getattr__(self, attr):
-        return getattr(self.__instance, attr)
-
-    def __setattr__(self, attr, value):
-        return setattr(self.__instance, attr, value)
+import sys, urllib, models, hsutil
 
 class HockeyStreams:
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        self.util = HSUtil()
+        self.util = hsutil.HSUtil()
         self.__login()
         self.ip_exception()
 
@@ -165,7 +43,7 @@ class HockeyStreams:
         return self.username
 
     #date should be str MM/DD/YYYY, none for today
-    def get_live(self, shouldFilter = False, team = None, date=None):
+    def get_live_streams(self, shouldFilter = False, team = None, date=None):
         if team is None:
             team = self.get_favorite_team()
         params = {'token': self.__get_token()}
@@ -176,12 +54,12 @@ class HockeyStreams:
         live_list = js['schedule']
         if shouldFilter:
             live_list = self.__filter_team(live_list, team)
-        return live_list
+        return self.util.json_to_objs(live_list, models.LiveStream)
 
     def get_scores(self, shouldFilter = False, team = None):
         if team is None:
             team = self.get_favorite_team()
-        #dont mind making this one public since anyone can make one
+        #dont mind putting this one here since it is the only endpoint that uses it
         data = urllib.urlencode({
             'key': 'ba74e5be0488146301152af4cb0dd23d'
         })
@@ -189,7 +67,7 @@ class HockeyStreams:
         scores_list = js['scores']
         if shouldFilter:
             scores_list = self.__filter_team(scores_list, team)
-        return scores_list
+        return self.util.json_to_objs(scores_list, models.Score)
 
     def __filter_team(self, objs, team):
         def filterf(obj):
@@ -199,14 +77,6 @@ class HockeyStreams:
                 return True
             return False
         return filter(filterf, objs)
-
-    def extract_score(self, obj, team = None):
-        if team is None:
-            team = self.get_favorite_team()
-        if obj.has_key('homeScore'):
-            return int(obj['homeScore'])
-        if obj.has_key('awayScore'):
-            return int(obj['awayScore'])
 
     def ip_exception(self):
         data = urllib.urlencode({
@@ -225,10 +95,10 @@ class HockeyStreams:
             params['location'] = location
         data = urllib.urlencode(params)
         js = self.util.get_json(self.util.get_live_stream_endpoint(), data)
-        return js
+        return self.util.json_to_objs(js, models.LiveStream)
 
     def get_locations(self):
-        return self.util.get_json(self.util.get_locations_endpoint(), "")
+        return self.util.json_to_objs(self.util.get_json(self.util.get_locations_endpoint(), ""), models.Location)
 
     def get_on_demand_dates(self):
         data = urllib.urlencode({
@@ -243,5 +113,39 @@ class HockeyStreams:
         if team is not None:
             params['team'] = team
         data = urllib.urlencode(params)
-        return self.util.get_json(self.util.get_on_demand_endpoint(), data)['ondemand']
+        return self.util.json_to_objs(self.util.get_json(self.util.get_on_demand_endpoint(), data)['ondemand'], models.OnDemand)
+
+    def get_on_demand_stream(self, on_demand_stream_id, location=None):
+        params = {'token': self.__get_token(), 'id': on_demand_stream_id}
+        if location is not None:
+            params['location'] = location
+        data = urllib.urlencode(params)
+        return self.util.json_to_objs(self.util.get_json(self.util.get_on_demand_stream_endpoint(), data), models.OnDemandStream)
+
+    def get_highlights(self,date=None, team_or_event=None):
+        params = {'token': self.__get_token()}
+        if date is not None:
+            params['date'] = date
+        if team_or_event is not None:
+            params['team'] = team_or_event
+        data = urllib.urlencode(params)
+        return self.util.json_to_objs(self.util.get_json(self.util.get_highlights_endpoint(), data)['highlights'], models.Highlight)
+
+    def get_condensed_games(self,date=None, team_or_event=None):
+        params = {'token': self.__get_token()}
+        if date is not None:
+            params['date'] = date
+        if team_or_event is not None:
+            params['team'] = team_or_event
+        data = urllib.urlencode(params)
+        return self.util.json_to_objs(self.util.get_json(self.util.get_condensed_games_endpoint(), data)['condensed'], models.CondensedGame)
+
+    def get_teams(self,league=None):
+        params = {'token': self.__get_token()}
+        if league is not None:
+            params['league'] = league
+        data = urllib.urlencode(params)
+        return self.util.json_to_objs(self.util.get_json(self.util.get_list_teams_endpoint(), data)['teams'], models.Team)
+
+
 

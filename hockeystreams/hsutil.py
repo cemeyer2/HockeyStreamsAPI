@@ -1,6 +1,6 @@
 __author__ = 'chuck'
 
-import urllib2, json, sys
+import urllib2, json
 
 class HSUtil:
 
@@ -38,15 +38,13 @@ class HSUtil:
                 if e.getcode() == 400:
                     self.__error_parse(json.loads(e.read()))
                 else:
-                    print "unknown http error, code="+e.getcode()
-                sys.exit(1)
+                    raise ValueError("unknown http error, code="+e.getcode())
 
         def __error_parse(self, js):
             if type(js) == list:
                 return
             if js.has_key('status') and str(js['status']) == 'Failed':
-                print js['msg']
-                sys.exit(1)
+                raise ValueError(js['msg'])
 
         def __base_url(self):
             return 'https://api.hockeystreams.com/'
