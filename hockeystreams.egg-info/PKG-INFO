@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: hockeystreams
+Version: 0.1
+Summary: Python wrapper for the hockeystreams.com REST API
+Home-page: http://charliemeyer.net
+Author: Charlie Meyer
+Author-email: charlie@charliemeyer.net
+License: GPL
+Description:       hockeystreams is a wrapper around the hockeystreams.com REST API
+              
+Keywords: hockey hockeystreams REST API
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Programming Language :: Python
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Internet
